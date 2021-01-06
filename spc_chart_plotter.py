@@ -27,7 +27,7 @@ stage_name = 'STAGE001_2'
 groupname = '3PI03STAGE001'
 chartname = 'WEIGHT'
 chart_type = 'MEAN'
-chart_descpt = 'M0EHM1PH_32000.000'
+chart_descpt = 'STAGE001_22000.000'
 spc_df = spc_gen('2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', cnt=data_cnt, ctype=chart_type, spec=3*0.1)
 spc_df['Point_Values'] = spc_df['Point_Values'] * 0.1
 spc_df.reset_index(inplace=True)
