@@ -114,4 +114,7 @@ def plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt,
     return fig, ax
 # %%
 fig, ax = plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt, keylot)
-# fig.savefig('./output/chart{}.png'.format(keylot, stage_name, groupname, chartname, chart_type), dpi=150)
+fig_name = '#'.join(['chart', keylot, stage_name, groupname, chartname, chart_type])
+fig.savefig('./output/{}.png'.format(fig_name), dpi=150)
+
+# %%
