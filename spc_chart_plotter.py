@@ -15,6 +15,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle as RT
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
 
+line_color = [46/255, 117/255, 182/255]
+
 # %%
 ################################
 # Generate demo SPC chart
@@ -34,6 +36,9 @@ spc_df.reset_index(inplace=True)
 keylot = spc_df['Lot_ID'].values.tolist()[random.randint(int(data_cnt*0.8), data_cnt-1)]
 
 # %%
+################################
+# SPC Plotter:
+################################
 def plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt, keylot):
     keylot_id = spc_df[spc_df['Lot_ID'] == keylot].index.tolist()
 
@@ -90,7 +95,7 @@ def plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt,
         ax.set_ylim(spc_df['LSL'].values[-1] * 2, -spc_df['LSL'].values[-1] * 2)
         spc_df['Point_Values'].loc[spc_df[spc_df['Point_Values'] <= spc_df['LSL'].values[-1] * 2]] = spc_df['LSL'].values[-1] * 1.95
 
-    ax.plot(spc_df['index'], spc_df['Point_Values'], '-o', color=[168/255, 0, 136/255])
+    ax.plot(spc_df['index'], spc_df['Point_Values'], '-o', color=line_color)
     ax.plot(ooc_index, spc_df['Point_Values'].loc[ooc_index], 'ro')
     ax.set_title('Group: [{0:s}][{1:s}][{2:s}][{3:s}]'.format(groupname, chartname, chart_type, chart_descpt),
                 fontsize=8, loc='left')
@@ -116,5 +121,3 @@ def plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt,
 fig, ax = plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt, keylot)
 fig_name = '#'.join(['chart', keylot, stage_name, groupname, chartname, chart_type])
 fig.savefig('./output/{}.png'.format(fig_name), dpi=150)
-
-# %%
