@@ -49,6 +49,16 @@ class SPC_plotter:
         self.chart_type = chart_type
         self.chart_descpt = chart_descpt
         self.stage_name = stage_name
+        self.usl = self.df['USL'].values[-1]
+        self.lsl = self.df['LSL'].values[-1]
+        self.ucl = self.df['UCL'].values[-1]
+        self.lcl = self.df['LCL'].values[-1]
+        self.val_max = self.df['Point_Values'].max()
+        self.val_min = self.df['Point_Values'].min()
+        self.val_abs_max = self.df['Point_Values'].abs().max()
+        self.val_abs_min = self.df['Point_Values'].abs().min()
+        self.abs_sl = max(abs(self.usl), abs(self.lsl))
+        self.abs_cl = max(abs(self.ucl), abs(self.lcl))
         self.hl_lots = hl_lots
         self.figsize = figsize
         self.layout_rect = layout_rect
@@ -90,24 +100,23 @@ class SPC_plotter:
 
     def set_yrange(self):
         self.ylim = self.ax.get_ylim()
-        if (self.df['Point_Values'].max() >= self.df['USL'].values[-1]*1.5) and\
-            (self.df['Point_Values'].max() < self.df['USL'].values[-1]*2):
-            self.ax.set_ylim(-self.df['Point_Values'].max() * 1.05, self.df['Point_Values'].max() * 1.05)
-        elif (self.df['Point_Values'].max() >= self.df['USL'].values[-1]*2):
-            self.ax.set_ylim(-self.df['USL'].values[-1] * 2, self.df['USL'].values[-1] * 2)
-            self.df['Point_Values'].loc[self.df[self.df['Point_Values'] >= self.df['USL'].values[-1] * 2]] = self.df['USL'].values[-1] * 1.95
+        if self.chart_type == 'MEAN':
+            if (self.val_abs_max >= self.abs_sl*1.5) and (self.val_abs_max < self.abs_sl*2):
+                self.ax.set_ylim(-self.val_abs_max * 1.05, self.val_abs_max * 1.05)
+            elif (self.val_abs_max >= self.abs_sl*2):
+                self.ax.set_ylim(-self.abs_sl * 2, self.abs_sl * 2)
+                # self.df['Point_Values'].loc[self.df[self.df['Point_Values'] >= self.usl * 2]] = self.usl * 1.95
 
-        if (self.chart_type == 'MEAN') or (self.chart_type == 'RANGE'):
-            if (self.df['Point_Values'].min() <= self.df['LSL'].values[-1]*1.5) and\
-                (self.df['Point_Values'].min() > self.df['LSL'].values[-1]*2):
-                self.ax.set_ylim(self.df['Point_Values'].min() * 1.05, -self.df['Point_Values'].min() * 1.05)
-            elif (self.df['Point_Values'].min() <= self.df['LSL'].values[-1]*2):
-                self.ax.set_ylim(self.df['LSL'].values[-1] * 2, -self.df['LSL'].values[-1] * 2)
-                self.df['Point_Values'].loc[self.df[self.df['Point_Values'] <= self.df['LSL'].values[-1] * 2]] = self.df['LSL'].values[-1] * 1.95
+        if self.chart_type == 'RANGE':
+            if (self.val_abs_max >= self.abs_sl*1.5) and (self.val_abs_max < self.abs_sl*2):
+                self.ax.set_ylim(0, self.val_abs_max * 1.05)
+            elif (self.val_abs_max >= self.abs_sl*2):
+                self.ax.set_ylim(0, self.abs_sl * 2)
+        
+        self.ylim = self.ax.get_ylim()
             
     def set_yaxis(self):
-        ax.tick_params(axis='y', which='minor', direction="out")
-        pass
+        self.ax.tick_params(axis='y', which='minor', direction="out")
 
     def plot_target(self):
         if self.chart_type == 'MEAN':
@@ -116,14 +125,25 @@ class SPC_plotter:
 
     def plot_cl(self):
         self.ax.plot(self.df['index'], self.df['UCL'], '--', color='r')
-        self.ax.text((len(self.df)-1)*1.01, self.df['UCL'].values[-1], 'UCL', color='r', va='center')
+        self.ax.text((len(self.df)-1)*1.01, self.ucl, 'UCL', color='r', va='center')
         self.ax.plot(self.df['index'], self.df['LCL'], '--', color='r')
-        self.ax.text((len(self.df) - 1) * 1.01, self.df['LCL'].values[-1], 'LCL', color='r', va='center')
+        self.ax.text((len(self.df) - 1) * 1.01, self.lcl, 'LCL', color='r', va='center')
 
     def plot_sl(self):
-        pass
+        if (self.val_abs_max > self.abs_sl*0.75) or (self.ucl / self.usl >= 0.75) or (self.lcl / self.lsl >= 0.75):
+            self.ax.plot(self.df['index'], self.df['USL'], '-', color='r')
+            if self.ucl / self.usl <= 0.95:
+                self.ax.text((len(self.df) - 1) * 1.01, self.usl, 'USL', color='r', va='center')
+            if self.chart_type != 'RANGE':
+                self.ax.plot(self.df['index'], self.df['LSL'], '-', color='r')
+                if self.lcl / self.lsl <= 0.95:
+                    self.ax.text((len(self.df) - 1) * 1.01, self.lsl, 'LSL', color='r', va='center')
+        else:
+            pass
 
     def plot_ooc(self):
+        self.ooc_index = list(self.df[(self.df['Point_Values'] >= self.df['UCL']) | (self.df['Point_Values'] <= self.df['LCL'])].index)
+        self.out_of_axis = 
         pass
 
     def hightlight_lot(self):
@@ -131,15 +151,17 @@ class SPC_plotter:
 
     def plot(self):
         self.gen_xticklabels()
-        self.plot_value()
         self.set_title()
         self.set_xyaxis()
         self.set_xrange()
         self.set_xaxis()
-        self.plot_target()
         self.plot_cl()
         self.plot_sl()
+        self.set_yrange()
+        self.set_yaxis()
+        self.plot_target()
         self.plot_ooc()
+        self.plot_value()
         self.hightlight_lot()
         plt.tight_layout(rect=self.layout_rect)
         plt.show()
@@ -147,33 +169,33 @@ class SPC_plotter:
 Plotter = SPC_plotter(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt, keylot)
 Plotter.plot()
 
-
+# %%
 def plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt, keylot):
     keylot_id = spc_df[spc_df['Lot_ID'] == keylot].index.tolist()
 
-    # if len(spc_df) <= 20:
-    #     tick_step = 1
-    # elif len(spc_df) > 20 and len(spc_df) <= 50:
-    #     tick_step = 2
-    # elif len(spc_df) > 50 and len(spc_df) <= 100:
-    #     tick_step = 3
-    # elif len(spc_df) > 100 and len(spc_df) <= 300:
-    #     tick_step = 4
-    # else:
-    #     tick_step = 5
+    if len(spc_df) <= 20:
+        tick_step = 1
+    elif len(spc_df) > 20 and len(spc_df) <= 50:
+        tick_step = 2
+    elif len(spc_df) > 50 and len(spc_df) <= 100:
+        tick_step = 3
+    elif len(spc_df) > 100 and len(spc_df) <= 300:
+        tick_step = 4
+    else:
+        tick_step = 5
 
-    # tick_id = np.arange(0, len(spc_df), tick_step)
-    # x_label = [datetime.strftime(x, '%y/%m/%d-%H:%M:%S') for x in spc_df['Data_Time'][tick_id]]
+    tick_id = np.arange(0, len(spc_df), tick_step)
+    x_label = [datetime.strftime(x, '%y/%m/%d-%H:%M:%S') for x in spc_df['Data_Time'][tick_id]]
 
-    # fig, ax = plt.subplots(1, 1, figsize=(16, 4.5))
-    # ax.plot(spc_df['index'], spc_df['UCL'], '--', color='r')
-    # ax.text((len(spc_df)-1)*1.01, spc_df['UCL'].values[-1], 'UCL', color='r', va='center')
-    # ax.plot(spc_df['index'], spc_df['LCL'], '--', color='r')
-    # ax.text((len(spc_df) - 1) * 1.01, spc_df['LCL'].values[-1], 'LCL', color='r', va='center')
+    fig, ax = plt.subplots(1, 1, figsize=(16, 4.5))
+    ax.plot(spc_df['index'], spc_df['UCL'], '--', color='r')
+    ax.text((len(spc_df)-1)*1.01, spc_df['UCL'].values[-1], 'UCL', color='r', va='center')
+    ax.plot(spc_df['index'], spc_df['LCL'], '--', color='r')
+    ax.text((len(spc_df) - 1) * 1.01, spc_df['LCL'].values[-1], 'LCL', color='r', va='center')
 
-    # if chart_type != 'RANGE':
-    #     ax.plot(spc_df['index'], np.zeros(len(spc_df)), ':', color=[84 / 255, 130 / 255, 53 / 255])
-    #     ax.text((len(spc_df) - 1) * 1.01, 0, 'Target', color=[84 / 255, 130 / 255, 53 / 255], va='center')
+    if chart_type != 'RANGE':
+        ax.plot(spc_df['index'], np.zeros(len(spc_df)), ':', color=[84 / 255, 130 / 255, 53 / 255])
+        ax.text((len(spc_df) - 1) * 1.01, 0, 'Target', color=[84 / 255, 130 / 255, 53 / 255], va='center')
 
     if (spc_df['Point_Values'].max() > spc_df['USL'].values[-1]*0.75) or\
             (spc_df['UCL'].values[-1] / spc_df['USL'].values[-1] >= 0.75) or\
@@ -189,44 +211,47 @@ def plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt,
         pass
 
     ooc_index = list(spc_df[(spc_df['Point_Values'] >= spc_df['UCL']) | (spc_df['Point_Values'] <= spc_df['LCL'])].index)
-    # ylim = ax.get_ylim()
-    # if (spc_df['Point_Values'].max() >= spc_df['USL'].values[-1]*1.5) and\
-    #     (spc_df['Point_Values'].max() < spc_df['USL'].values[-1]*2):
-    #     ax.set_ylim(-spc_df['Point_Values'].max() * 1.05, spc_df['Point_Values'].max() * 1.05)
-    # elif (spc_df['Point_Values'].max() >= spc_df['USL'].values[-1]*2):
-    #     ax.set_ylim(-spc_df['USL'].values[-1] * 2, spc_df['USL'].values[-1] * 2)
-    #     spc_df['Point_Values'].loc[spc_df[spc_df['Point_Values'] >= spc_df['USL'].values[-1] * 2]] = spc_df['USL'].values[-1] * 1.95
+    ylim = ax.get_ylim()
+    if (spc_df['Point_Values'].max() >= spc_df['USL'].values[-1]*1.5) and\
+        (spc_df['Point_Values'].max() < spc_df['USL'].values[-1]*2):
+        ax.set_ylim(-spc_df['Point_Values'].max() * 1.05, spc_df['Point_Values'].max() * 1.05)
+    elif (spc_df['Point_Values'].max() >= spc_df['USL'].values[-1]*2):
+        ax.set_ylim(-spc_df['USL'].values[-1] * 2, spc_df['USL'].values[-1] * 2)
+        spc_df['Point_Values'].loc[spc_df[spc_df['Point_Values'] >= spc_df['USL'].values[-1] * 2]] = spc_df['USL'].values[-1] * 1.95
 
-    # if (spc_df['Point_Values'].min() <= spc_df['LSL'].values[-1]*1.5) and\
-    #     (spc_df['Point_Values'].min() > spc_df['LSL'].values[-1]*2):
-    #     ax.set_ylim(spc_df['Point_Values'].min() * 1.05, -spc_df['Point_Values'].min() * 1.05)
-    # elif (spc_df['Point_Values'].min() <= spc_df['LSL'].values[-1]*2):
-    #     ax.set_ylim(spc_df['LSL'].values[-1] * 2, -spc_df['LSL'].values[-1] * 2)
-    #     spc_df['Point_Values'].loc[spc_df[spc_df['Point_Values'] <= spc_df['LSL'].values[-1] * 2]] = spc_df['LSL'].values[-1] * 1.95
+    if (spc_df['Point_Values'].min() <= spc_df['LSL'].values[-1]*1.5) and\
+        (spc_df['Point_Values'].min() > spc_df['LSL'].values[-1]*2):
+        ax.set_ylim(spc_df['Point_Values'].min() * 1.05, -spc_df['Point_Values'].min() * 1.05)
+    elif (spc_df['Point_Values'].min() <= spc_df['LSL'].values[-1]*2):
+        ax.set_ylim(spc_df['LSL'].values[-1] * 2, -spc_df['LSL'].values[-1] * 2)
+        spc_df['Point_Values'].loc[spc_df[spc_df['Point_Values'] <= spc_df['LSL'].values[-1] * 2]] = spc_df['LSL'].values[-1] * 1.95
 
-    # ax.plot(spc_df['index'], spc_df['Point_Values'], '-o', color=line_color)
+    ax.plot(spc_df['index'], spc_df['Point_Values'], '-o', color=line_color)
     ax.plot(ooc_index, spc_df['Point_Values'].loc[ooc_index], 'ro')
-    # ax.set_title('Group: [{0:s}][{1:s}][{2:s}][{3:s}]'.format(groupname, chartname, chart_type, chart_descpt),
-    #             fontsize=8, loc='left')
-    # # ax.minorticks_on()
-    # ax.tick_params(axis='y', which='minor', direction="out")
+    ax.set_title('Group: [{0:s}][{1:s}][{2:s}][{3:s}]'.format(groupname, chartname, chart_type, chart_descpt),
+                fontsize=8, loc='left')
+    # ax.minorticks_on()
+    ax.tick_params(axis='y', which='minor', direction="out")
     ylim = ax.get_ylim()
     if keylot_id:
         for kl in keylot_id:
             _ = ax.add_patch(RT((kl-0.5, ylim[0]), 1, ylim[1] - ylim[0], facecolor='r', alpha=0.3))
-    # ax.set_xlim([-len(spc_df)*0.01, (len(spc_df)-1)*1.01])
+    ax.set_xlim([-len(spc_df)*0.01, (len(spc_df)-1)*1.01])
     # ax.xaxis.set_major_locator(MultipleLocator(tick_step))
     # ax.yaxis.set_minor_locator(AutoMinorLocator())
-    # ax.tick_params(which="minor", axis="y", direction="inout")
-    # xticks = [x.get_text() for x in ax.xaxis.get_ticklabels()][1:-1]
-    # ax.set_xticks(tick_id)
-    # ax.set_xticklabels(x_label, rotation=90)
+    ax.tick_params(which="minor", axis="y", direction="inout")
+    xticks = [x.get_text() for x in ax.xaxis.get_ticklabels()][1:-1]
+    ax.set_xticks(tick_id)
+    ax.set_xticklabels(x_label, rotation=90)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     # plt.tight_layout(rect=[0, 0, 0.97, 1])
     # plt.show()
     return fig, ax
 
+fig, ax = plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt, keylot)
+
+# %%
 def plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt, keylot):
     keylot_id = spc_df[spc_df['Lot_ID'] == keylot].index.tolist()
 
@@ -306,6 +331,5 @@ def plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt,
     plt.show()
     return fig, ax
 # %%
-fig, ax = plot_spc(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt, keylot)
 fig_name = '#'.join(['chart', keylot, stage_name, groupname, chartname, chart_type])
 fig.savefig('./output/{}.png'.format(fig_name), dpi=150)
