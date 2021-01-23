@@ -28,75 +28,75 @@ class SPCDataConfig:
 
 
 class DataTimeGenerator:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, cfg):
+        self.cfg = cfg
 
     def gen(self):
-        time_series_num = np.random.randint(self.config.start_date_num, self.config.end_date_num, self.config.cnt)
+        time_series_num = np.random.randint(self.cfg.start_date_num, self.cfg.end_date_num, self.cfg.cnt)
         time_series = [datetime.fromtimestamp(x) for x in time_series_num]
         return time_series
 
 
 class RawDataGenerator:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, cfg):
+        self.cfg = cfg
 
     def gen(self):
-        values = np.random.randn(self.config.cnt) * self.config.data_order
-        if self.config.ctype == 'RANGE':
+        values = np.random.randn(self.cfg.cnt) * self.cfg.data_order
+        if self.cfg.ctype == 'RANGE':
             values = np.abs(values)
 
         return values
 
 
 class SpecGenerator:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, cfg):
+        self.cfg = cfg
 
     def gen(self):
-        SPEC = self.config.sl
-        USL = np.ones(self.config.cnt) * SPEC
-        if self.config.ctype == 'RANGE':
-            LSL = np.zeros(self.config.cnt)
+        SPEC = self.cfg.sl
+        USL = np.ones(self.cfg.cnt) * SPEC
+        if self.cfg.ctype == 'RANGE':
+            LSL = np.zeros(self.cfg.cnt)
         else:
-            LSL = np.ones(self.config.cnt) * -SPEC
+            LSL = np.ones(self.cfg.cnt) * -SPEC
 
         return USL, LSL
 
 
 class ControlLimitGenerator:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, cfg):
+        self.cfg = cfg
 
     def gen(self):
-        CL = self.config.cl
-        UCL = np.ones(self.config.cnt) * CL
-        if self.config.ctype == 'RANGE':
-            LCL = np.zeros(self.config.cnt)
+        CL = self.cfg.cl
+        UCL = np.ones(self.cfg.cnt) * CL
+        if self.cfg.ctype == 'RANGE':
+            LCL = np.zeros(self.cfg.cnt)
         else:
-            LCL = np.ones(self.config.cnt) * -CL
+            LCL = np.ones(self.cfg.cnt) * -CL
 
         return UCL, LCL
 
 
 class TargetGenerator:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, cfg):
+        self.cfg = cfg
 
     def gen(self):
-        TARGET = np.ones(self.config.cnt) * self.config.target
+        TARGET = np.ones(self.cfg.cnt) * self.cfg.target
         return TARGET
 
 
 class LotIdGenerator:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, cfg):
+        self.cfg = cfg
 
     def gen(self):
         LETTER = ['U', 'X', 'T', 'G']
-        lot6 = ['L7{0:s}{1:03d}'.format(LETTER[random.randint(0, 3)], random.randint(1, 999)) for x in range(self.config.cnt)]
-        lot2 = ['{0:02d}'.format(random.randint(1, 99)) for x in range(self.config.cnt)]
-        itemid = ['{0:02d}'.format(random.randint(1, 25)) for x in range(self.config.cnt)]
+        lot6 = ['L7{0:s}{1:03d}'.format(LETTER[random.randint(0, 3)], random.randint(1, 999)) for x in range(self.cfg.cnt)]
+        lot2 = ['{0:02d}'.format(random.randint(1, 99)) for x in range(self.cfg.cnt)]
+        itemid = ['{0:02d}'.format(random.randint(1, 25)) for x in range(self.cfg.cnt)]
         lot_info = pd.DataFrame({
             'Lot6': lot6, 'Lot2': lot2, 'Item2': itemid
         }, columns=['Lot6', 'Lot2', 'Item2'])
@@ -106,16 +106,16 @@ class LotIdGenerator:
 
 
 class SPCDataGenerator:
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, cfg):
+        self.cfg = cfg
 
     def gen(self):
-        TS = DataTimeGenerator(self.config)
-        RD = RawDataGenerator(self.config)
-        SL = SpecGenerator(self.config)
-        CL = ControlLimitGenerator(self.config)
-        TG = TargetGenerator(self.config)
-        LI = LotIdGenerator(self.config)
+        TS = DataTimeGenerator(self.cfg)
+        RD = RawDataGenerator(self.cfg)
+        SL = SpecGenerator(self.cfg)
+        CL = ControlLimitGenerator(self.cfg)
+        TG = TargetGenerator(self.cfg)
+        LI = LotIdGenerator(self.cfg)
 
         time_series = TS.gen()
         values = RD.gen()
