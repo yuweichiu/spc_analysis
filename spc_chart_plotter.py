@@ -98,9 +98,39 @@ class SPC_plotter:
         self.ax.set_xticks(self.tick_id)
         self.ax.set_xticklabels(self.x_label, rotation=90)
 
-    def set_yrange(self):
-        self.ylim = self.ax.get_ylim()
+    def set_yaxis(self):
+        self.ax.tick_params(axis='y', which='minor', direction="out")
+
+    def plot_target(self):
         if self.chart_type == 'MEAN':
+            self.ax.plot(self.df['index'], np.zeros(len(self.df)), ':', color=[84 / 255, 130 / 255, 53 / 255])
+            self.ax.text((len(self.df) - 1) * 1.01, 0, 'Target', color=[84 / 255, 130 / 255, 53 / 255], va='center')
+
+    def plot_cl(self):
+        self.ax.plot(self.df['index'], self.df['UCL'], '--', color='r')
+        self.ax.text((len(self.df)-1)*1.01, self.ucl, 'UCL', color='r', va='center')
+        self.ax.plot(self.df['index'], self.df['LCL'], '--', color='r')
+        self.ax.text((len(self.df) - 1) * 1.01, self.lcl, 'LCL', color='r', va='center')
+
+    def plot_sl(self):
+        self.ax.plot(self.df['index'], self.df['USL'], '-', color='r')
+        self.ax.plot(self.df['index'], self.df['LSL'], '-', color='r')
+
+    def text_usl(self):
+        ymin, ymax = self.ax.get_ylim()
+        if self.usl < ymax and self.ucl / self.usl <= 0.95:
+            self.ax.text((len(self.df) - 1) * 1.01, self.usl, 'USL', color='r', va='center')
+            print("Set USL")
+    
+    def text_lsl(self):
+        ymin, ymax = self.ax.get_ylim()
+        if self.lsl > ymin and self.lcl / self.lsl <= 0.95:
+            self.ax.text((len(self.df) - 1) * 1.01, self.lsl, 'LSL', color='r', va='center')
+            print("Set LSL")
+
+    def set_yrange(self):
+        if self.chart_type == 'MEAN':
+            self.ax.set_ylim(self.lcl * 1.05, self.ucl * 1.05)
             if (self.val_abs_max >= self.abs_sl*1.5) and (self.val_abs_max < self.abs_sl*2):
                 self.ax.set_ylim(-self.val_abs_max * 1.05, self.val_abs_max * 1.05)
             elif (self.val_abs_max >= self.abs_sl*2):
@@ -108,12 +138,15 @@ class SPC_plotter:
                 # self.df['Point_Values'].loc[self.df[self.df['Point_Values'] >= self.usl * 2]] = self.usl * 1.95
 
         if self.chart_type == 'RANGE':
+            self.ax.set_ylim(0, self.ucl * 1.05)
             if (self.val_abs_max >= self.abs_sl*1.5) and (self.val_abs_max < self.abs_sl*2):
                 self.ax.set_ylim(0, self.val_abs_max * 1.05)
             elif (self.val_abs_max >= self.abs_sl*2):
                 self.ax.set_ylim(0, self.abs_sl * 2)
         
-        self.ylim = self.ax.get_ylim()
+        self.ymin, self.ymax = self.ax.get_ylim()
+        self.text_usl()
+        self.text_lsl()
             
     def set_yaxis(self):
         self.ax.tick_params(axis='y', which='minor', direction="out")
