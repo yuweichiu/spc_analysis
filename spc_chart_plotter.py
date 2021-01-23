@@ -19,7 +19,7 @@ line_color = [46/255, 117/255, 182/255]
 
 # %%
 ################################
-# Generate demo SPC chart
+# Generate demo SPC data
 ################################
 mpl.rcParams.update({"font.size": "8",
                      'lines.linewidth': 1,
