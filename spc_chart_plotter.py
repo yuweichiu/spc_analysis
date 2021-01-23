@@ -25,18 +25,15 @@ mpl.rcParams.update({"font.size": "8",
                      'lines.linewidth': 1,
                      'lines.markersize': 4})
 data_cnt = 300
-stage_name = 'STAGE001_2'
-groupname = '3PI03STAGE001'
-chartname = 'WEIGHT'
+process_name = 'PROC-001-2'
+chart_name = 'WEIGHT'
 chart_type = 'MEAN'
-chart_descpt = 'STAGE001_22000.000'
+chart_descpt = 'A demo SPC chart'
 
 spc_cfg = SPCDataConfig('2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', ctype=chart_type, cnt=data_cnt, data_order=0.1, sl=0.3, cl=0.2, target=0)
 SPC = SPCDataGenerator(spc_cfg)
 spc_df = SPC.gen()
 
-spc_df = spc_gen('2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', cnt=data_cnt, ctype=chart_type, spec=3*0.1, tighten_ratio=1.0)
-spc_df['Value'] = spc_df['Value'] * 0.1
 spc_df.reset_index(inplace=True)
 keylot = spc_df['Lot_ID'].values.tolist()[random.randint(int(data_cnt*0.8), data_cnt-1)]
 
@@ -44,16 +41,16 @@ keylot = spc_df['Lot_ID'].values.tolist()[random.randint(int(data_cnt*0.8), data
 ################################
 # SPC Plotter:
 ################################
-class SPC_plotter:
+class SpcPlotter:
+    # TODO: make a control limit be tightened assuming the process was imporved.
     line_color = [46/255, 117/255, 182/255]
     
-    def __init__(self, df, stage_name, groupname, chartname, chart_type, chart_descpt, hl_lot, figsize=(16, 5), layout_rect=[0, 0, 0.97, 1]):
+    def __init__(self, df, process_name, chart_name, chart_type, chart_descpt, hl_lot, figsize=(16, 5), layout_rect=[0, 0, 0.97, 1]):
         self.df = df
-        self.group_name = groupname
-        self.chart_name = chartname
+        self.chart_name = chart_name
         self.chart_type = chart_type
         self.chart_descpt = chart_descpt
-        self.stage_name = stage_name
+        self.process_name = process_name
         self.usl = self.df['USL'].values[-1]
         self.lsl = self.df['LSL'].values[-1]
         self.ucl = self.df['UCL'].values[-1]
@@ -86,8 +83,8 @@ class SPC_plotter:
         self.x_label = [datetime.strftime(x, '%y/%m/%d-%H:%M:%S') for x in self.df['Data_Time'][self.tick_id]]
 
     def set_title(self):
-        self.ax.set_title('Group: [{0:s}][{1:s}][{2:s}][{3:s}]'.format(
-            self.group_name, self.chart_name, self.chart_type, self.chart_descpt
+        self.ax.set_title('Title: [{0:s}][{1:s}][{2:s}][{3:s}]'.format(
+            self.process_name, self.chart_name, self.chart_type, self.chart_descpt
             ),fontsize=8, loc='left')
 
     def set_xyaxis(self):
@@ -133,7 +130,7 @@ class SPC_plotter:
 
     def set_yrange(self):
         if self.chart_type == 'MEAN':
-            self.ax.set_ylim(self.lcl * 1.05, self.ucl * 1.05)
+            self.ax.set_ylim(self.lcl * 1.25, self.ucl * 1.25)
             if (self.val_abs_max >= self.abs_sl*1.5) and (self.val_abs_max < self.abs_sl*2):
                 self.ax.set_ylim(-self.val_abs_max * 1.05, self.val_abs_max * 1.05)
             elif (self.val_abs_max >= self.abs_sl*2):
@@ -141,7 +138,7 @@ class SPC_plotter:
                 # self.df['Value'].loc[self.df[self.df['Value'] >= self.usl * 2]] = self.usl * 1.95
 
         if self.chart_type == 'RANGE':
-            self.ax.set_ylim(0, self.ucl * 1.05)
+            self.ax.set_ylim(0, self.ucl * 1.5)
             if (self.val_abs_max >= self.abs_sl*1.5) and (self.val_abs_max < self.abs_sl*2):
                 self.ax.set_ylim(0, self.val_abs_max * 1.05)
             elif (self.val_abs_max >= self.abs_sl*2):
@@ -195,9 +192,10 @@ class SPC_plotter:
         plt.show()
 
 # %%
-Plotter = SPC_plotter(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt, keylot)
+Plotter = SpcPlotter(spc_df, process_name, chart_name, chart_type, chart_descpt, keylot)
 Plotter.plot()
+fig, ax = Plotter.fig, Plotter.ax
 
 # %%
-fig_name = '#'.join(['chart', keylot, stage_name, groupname, chartname, chart_type])
+fig_name = '#'.join(['chart', keylot, process_name, chart_name, chart_type])
 fig.savefig('./output/{}.png'.format(fig_name), dpi=150)
