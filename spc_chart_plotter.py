@@ -42,7 +42,7 @@ keylot = spc_df['Lot_ID'].values.tolist()[random.randint(int(data_cnt*0.8), data
 class SPC_plotter:
     line_color = [46/255, 117/255, 182/255]
     
-    def __init__(self, df, stage_name, groupname, chartname, chart_type, chart_descpt, hl_lots, figsize=(16, 5), layout_rect=[0, 0, 0.97, 1]):
+    def __init__(self, df, stage_name, groupname, chartname, chart_type, chart_descpt, hl_lot, figsize=(16, 5), layout_rect=[0, 0, 0.97, 1]):
         self.df = df
         self.group_name = groupname
         self.chart_name = chartname
@@ -59,7 +59,8 @@ class SPC_plotter:
         self.val_abs_min = self.df['Point_Values'].abs().min()
         self.abs_sl = max(abs(self.usl), abs(self.lsl))
         self.abs_cl = max(abs(self.ucl), abs(self.lcl))
-        self.hl_lots = hl_lots
+        self.hl_lot = hl_lot
+        self.hl_lot_index = []
         self.figsize = figsize
         self.layout_rect = layout_rect
         self.fig, self.ax = plt.subplots(1, 1, figsize=self.figsize)
@@ -165,7 +166,11 @@ class SPC_plotter:
             self.ax.plot(self.ooc_index, self.df['Point_Values'].loc[self.ooc_index], 'ro')
 
     def hightlight_lot(self):
-        pass
+        ymin, ymax = self.ax.get_ylim()
+        self.hl_lot_index = self.df[self.df['Lot_ID'] == self.hl_lot].index.tolist()
+        if self.hl_lot_index:
+            for hl in self.hl_lot_index:
+                _ = self.ax.add_patch(RT((hl-0.5, ymin), 1, ymax - ymin, facecolor='m', alpha=0.3))
 
     def plot(self):
         self.gen_xticklabels()
