@@ -79,9 +79,6 @@ class SPC_plotter:
         self.tick_id = np.arange(0, len(self.df), self.tick_step)
         self.x_label = [datetime.strftime(x, '%y/%m/%d-%H:%M:%S') for x in self.df['Data_Time'][self.tick_id]]
 
-    def plot_value(self):
-        self.ax.plot(self.df['index'], self.df['Point_Values'], '-o', color=line_color)
-
     def set_title(self):
         self.ax.set_title('Group: [{0:s}][{1:s}][{2:s}][{3:s}]'.format(
             self.group_name, self.chart_name, self.chart_type, self.chart_descpt
@@ -148,36 +145,24 @@ class SPC_plotter:
         self.text_usl()
         self.text_lsl()
             
-    def set_yaxis(self):
-        self.ax.tick_params(axis='y', which='minor', direction="out")
 
-    def plot_target(self):
-        if self.chart_type == 'MEAN':
-            self.ax.plot(self.df['index'], np.zeros(len(self.df)), ':', color=[84 / 255, 130 / 255, 53 / 255])
-            self.ax.text((len(self.df) - 1) * 1.01, 0, 'Target', color=[84 / 255, 130 / 255, 53 / 255], va='center')
-
-    def plot_cl(self):
-        self.ax.plot(self.df['index'], self.df['UCL'], '--', color='r')
-        self.ax.text((len(self.df)-1)*1.01, self.ucl, 'UCL', color='r', va='center')
-        self.ax.plot(self.df['index'], self.df['LCL'], '--', color='r')
-        self.ax.text((len(self.df) - 1) * 1.01, self.lcl, 'LCL', color='r', va='center')
-
-    def plot_sl(self):
-        if (self.val_abs_max > self.abs_sl*0.75) or (self.ucl / self.usl >= 0.75) or (self.lcl / self.lsl >= 0.75):
-            self.ax.plot(self.df['index'], self.df['USL'], '-', color='r')
-            if self.ucl / self.usl <= 0.95:
-                self.ax.text((len(self.df) - 1) * 1.01, self.usl, 'USL', color='r', va='center')
-            if self.chart_type != 'RANGE':
-                self.ax.plot(self.df['index'], self.df['LSL'], '-', color='r')
-                if self.lcl / self.lsl <= 0.95:
-                    self.ax.text((len(self.df) - 1) * 1.01, self.lsl, 'LSL', color='r', va='center')
-        else:
-            pass
-
-    def plot_ooc(self):
+    def set_ooc(self):
+        ymin, ymax = self.ax.get_ylim()
         self.ooc_index = list(self.df[(self.df['Point_Values'] >= self.df['UCL']) | (self.df['Point_Values'] <= self.df['LCL'])].index)
-        self.out_of_axis = 
-        pass
+
+        self.out_of_ymax = list(self.df[(self.df['Point_Values'] >= ymax)].index)
+        if self.out_of_ymax:
+            self.df['Point_Values'].loc[self.out_of_ymax] = ymax * 0.98
+
+            if self.chart_type != 'RANGE':
+            self.out_of_ymin = list(self.df[(self.df['Point_Values'] <= ymin)].index)
+            if self.out_of_ymin:
+                self.df['Point_Values'].loc[self.out_of_ymin] = ymin * 0.98
+
+    def plot_value(self):
+        self.ax.plot(self.df['index'], self.df['Point_Values'], '-o', color=line_color)
+        if self.ooc_index:
+            self.ax.plot(self.ooc_index, self.df['Point_Values'].loc[self.ooc_index], 'ro')
 
     def hightlight_lot(self):
         pass
@@ -193,7 +178,7 @@ class SPC_plotter:
         self.set_yrange()
         self.set_yaxis()
         self.plot_target()
-        self.plot_ooc()
+        self.set_ooc()
         self.plot_value()
         self.hightlight_lot()
         plt.tight_layout(rect=self.layout_rect)
