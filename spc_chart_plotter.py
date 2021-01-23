@@ -24,7 +24,7 @@ line_color = [46/255, 117/255, 182/255]
 mpl.rcParams.update({"font.size": "8",
                      'lines.linewidth': 1,
                      'lines.markersize': 4})
-data_cnt = 300
+data_cnt = 100
 process_name = 'PROC-001-2'
 chart_name = 'WEIGHT'
 chart_type = 'MEAN'
@@ -35,7 +35,7 @@ SPC = SPCDataGenerator(spc_cfg)
 spc_df = SPC.gen()
 
 spc_df.reset_index(inplace=True)
-keylot = spc_df['Lot_ID'].values.tolist()[random.randint(int(data_cnt*0.8), data_cnt-1)]
+focus_lot = spc_df['Lot_ID'].values.tolist()[random.randint(int(data_cnt*0.8), data_cnt-1)]
 
 # %%
 ################################
@@ -45,7 +45,7 @@ class SpcPlotter:
     # TODO: make a control limit be tightened assuming the process was imporved.
     line_color = [46/255, 117/255, 182/255]
     
-    def __init__(self, df, process_name, chart_name, chart_type, chart_descpt, hl_lot, figsize=(16, 5), layout_rect=[0, 0, 0.97, 1]):
+    def __init__(self, df, process_name, chart_name, chart_type, chart_descpt, hl_lot=None, figsize=(8, 4.5), layout_rect=[0, 0, 0.97, 1]):
         self.df = df
         self.chart_name = chart_name
         self.chart_type = chart_type
@@ -192,10 +192,12 @@ class SpcPlotter:
         plt.show()
 
 # %%
-Plotter = SpcPlotter(spc_df, process_name, chart_name, chart_type, chart_descpt, keylot)
+Plotter = SpcPlotter(spc_df, process_name, chart_name, chart_type, chart_descpt)
 Plotter.plot()
 fig, ax = Plotter.fig, Plotter.ax
 
 # %%
-fig_name = '#'.join(['chart', keylot, process_name, chart_name, chart_type])
+fig_name = '#'.join(['chart', process_name, chart_name, chart_type])
 fig.savefig('./output/{}.png'.format(fig_name), dpi=150)
+
+# %%
