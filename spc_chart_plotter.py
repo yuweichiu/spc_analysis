@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import os, sys, time, random
 from datetime import datetime
-from spc_data_generator import spc_gen
+from spc_data_generator import SPCDataConfig, SPCDataGenerator
 import matplotlib as mpl
 # matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
@@ -30,8 +30,13 @@ groupname = '3PI03STAGE001'
 chartname = 'WEIGHT'
 chart_type = 'MEAN'
 chart_descpt = 'STAGE001_22000.000'
-spc_df = spc_gen('2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', cnt=data_cnt, ctype=chart_type, spec=3*0.1)
-spc_df['Point_Values'] = spc_df['Point_Values'] * 0.1
+
+spc_cfg = SPCDataConfig('2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', ctype=chart_type, cnt=data_cnt, data_order=0.1, sl=0.3, cl=0.2, target=0)
+SPC = SPCDataGenerator(spc_cfg)
+spc_df = SPC.gen()
+
+spc_df = spc_gen('2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', cnt=data_cnt, ctype=chart_type, spec=3*0.1, tighten_ratio=1.0)
+spc_df['Value'] = spc_df['Value'] * 0.1
 spc_df.reset_index(inplace=True)
 keylot = spc_df['Lot_ID'].values.tolist()[random.randint(int(data_cnt*0.8), data_cnt-1)]
 
@@ -53,10 +58,10 @@ class SPC_plotter:
         self.lsl = self.df['LSL'].values[-1]
         self.ucl = self.df['UCL'].values[-1]
         self.lcl = self.df['LCL'].values[-1]
-        self.val_max = self.df['Point_Values'].max()
-        self.val_min = self.df['Point_Values'].min()
-        self.val_abs_max = self.df['Point_Values'].abs().max()
-        self.val_abs_min = self.df['Point_Values'].abs().min()
+        self.val_max = self.df['Value'].max()
+        self.val_min = self.df['Value'].min()
+        self.val_abs_max = self.df['Value'].abs().max()
+        self.val_abs_min = self.df['Value'].abs().min()
         self.abs_sl = max(abs(self.usl), abs(self.lsl))
         self.abs_cl = max(abs(self.ucl), abs(self.lcl))
         self.hl_lot = hl_lot
@@ -133,7 +138,7 @@ class SPC_plotter:
                 self.ax.set_ylim(-self.val_abs_max * 1.05, self.val_abs_max * 1.05)
             elif (self.val_abs_max >= self.abs_sl*2):
                 self.ax.set_ylim(-self.abs_sl * 2, self.abs_sl * 2)
-                # self.df['Point_Values'].loc[self.df[self.df['Point_Values'] >= self.usl * 2]] = self.usl * 1.95
+                # self.df['Value'].loc[self.df[self.df['Value'] >= self.usl * 2]] = self.usl * 1.95
 
         if self.chart_type == 'RANGE':
             self.ax.set_ylim(0, self.ucl * 1.05)
@@ -149,21 +154,21 @@ class SPC_plotter:
 
     def set_ooc(self):
         ymin, ymax = self.ax.get_ylim()
-        self.ooc_index = list(self.df[(self.df['Point_Values'] >= self.df['UCL']) | (self.df['Point_Values'] <= self.df['LCL'])].index)
+        self.ooc_index = list(self.df[(self.df['Value'] >= self.df['UCL']) | (self.df['Value'] <= self.df['LCL'])].index)
         
-        self.out_of_ymax = list(self.df[(self.df['Point_Values'] >= ymax)].index)
+        self.out_of_ymax = list(self.df[(self.df['Value'] >= ymax)].index)
         if self.out_of_ymax:
-            self.df['Point_Values'].loc[self.out_of_ymax] = ymax * 0.98
+            self.df['Value'].loc[self.out_of_ymax] = ymax * 0.98
 
         if self.chart_type != 'RANGE':
-            self.out_of_ymin = list(self.df[(self.df['Point_Values'] <= ymin)].index)
+            self.out_of_ymin = list(self.df[(self.df['Value'] <= ymin)].index)
             if self.out_of_ymin:
-                self.df['Point_Values'].loc[self.out_of_ymin] = ymin * 0.98
+                self.df['Value'].loc[self.out_of_ymin] = ymin * 0.98
 
     def plot_value(self):
-        self.ax.plot(self.df['index'], self.df['Point_Values'], '-o', color=line_color)
+        self.ax.plot(self.df['index'], self.df['Value'], '-o', color=line_color)
         if self.ooc_index:
-            self.ax.plot(self.ooc_index, self.df['Point_Values'].loc[self.ooc_index], 'ro')
+            self.ax.plot(self.ooc_index, self.df['Value'].loc[self.ooc_index], 'ro')
 
     def hightlight_lot(self):
         ymin, ymax = self.ax.get_ylim()
@@ -193,5 +198,6 @@ class SPC_plotter:
 Plotter = SPC_plotter(spc_df, stage_name, groupname, chartname, chart_type, chart_descpt, keylot)
 Plotter.plot()
 
+# %%
 fig_name = '#'.join(['chart', keylot, stage_name, groupname, chartname, chart_type])
 fig.savefig('./output/{}.png'.format(fig_name), dpi=150)
