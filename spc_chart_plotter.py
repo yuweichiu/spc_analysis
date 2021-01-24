@@ -201,3 +201,6 @@ fig_name = '#'.join(['chart', process_name, chart_name, chart_type])
 fig.savefig('./output/{}.png'.format(fig_name), dpi=150)
 
 # %%
+from tabulate import tabulate
+print(tabulate(spc_df.head(), headers='keys', tablefmt='psql'))
+# %%
