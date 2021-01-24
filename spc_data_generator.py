@@ -33,6 +33,7 @@ class DataTimeGenerator:
 
     def gen(self):
         time_series_num = np.random.randint(self.cfg.start_date_num, self.cfg.end_date_num, self.cfg.cnt)
+        time_series_num = np.sort(time_series_num)
         time_series = [datetime.fromtimestamp(x) for x in time_series_num]
         return time_series
 
@@ -93,15 +94,14 @@ class LotIdGenerator:
         self.cfg = cfg
 
     def gen(self):
-        LETTER = ['U', 'X', 'T', 'G']
-        lot6 = ['L7{0:s}{1:03d}'.format(LETTER[random.randint(0, 3)], random.randint(1, 999)) for x in range(self.cfg.cnt)]
-        lot2 = ['{0:02d}'.format(random.randint(1, 99)) for x in range(self.cfg.cnt)]
+        LETTER = ['W', 'X', 'Y', 'Z']
+        lotid = ['A21{0:s}{0:s}{1:03d}'.format(LETTER[random.randint(0, 3)], random.randint(1, 999)) for x in range(self.cfg.cnt)]
         itemid = ['{0:02d}'.format(random.randint(1, 25)) for x in range(self.cfg.cnt)]
         lot_info = pd.DataFrame({
-            'Lot6': lot6, 'Lot2': lot2, 'Item2': itemid
-        }, columns=['Lot6', 'Lot2', 'Item2'])
-        lot_info["Lot_ID"] = lot_info['Lot6'].str.cat(lot_info['Lot2'].values, sep='.')
-        lot_info["Item_ID"] = lot_info['Lot6'].str.cat(lot_info['Item2'].values, sep='.')
+            'Lot': lotid, 'Item2': itemid
+        }, columns=['Lot', 'Item2'])
+        lot_info["Lot_ID"] = lot_info['Lot']
+        lot_info["Item_ID"] = lot_info['Lot'].str.cat(lot_info['Item2'].values, sep='.')
         return lot_info
 
 
