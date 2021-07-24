@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on 2020/12/19 下午 01:26
-@author: Ivan Y.W.Chiu
-"""
+# """
+# Created on 2020/12/19 下午 01:26
+# @author: Ivan Y.W.Chiu
+# """
 
 import pandas as pd
 import numpy as np
@@ -95,14 +95,45 @@ class LotIdGenerator:
 
     def gen(self):
         LETTER = ['W', 'X', 'Y', 'Z']
-        lotid = ['A21{0:s}{0:s}{1:03d}'.format(LETTER[random.randint(0, 3)], random.randint(1, 999)) for x in range(self.cfg.cnt)]
-        itemid = ['{0:02d}'.format(random.randint(1, 25)) for x in range(self.cfg.cnt)]
+        lotid = ['A21{0:s}{0:s}{1:03d}'.format(LETTER[random.randint(0, 3)], random.randint(1, 999)) for i in range(self.cfg.cnt)]
+        itemid = ['{0:02d}'.format(random.randint(1, 25)) for i in range(self.cfg.cnt)]
         lot_info = pd.DataFrame({
             'Lot': lotid, 'Item2': itemid
         }, columns=['Lot', 'Item2'])
         lot_info["Lot_ID"] = lot_info['Lot']
         lot_info["Item_ID"] = lot_info['Lot'].str.cat(lot_info['Item2'].values, sep='.')
         return lot_info
+
+class SEqpIdGenerator:
+    def __init__(self, cfg):
+        self.cfg = cfg
+
+    def gen(self):
+        LETTER = ['X', 'Y', 'Z']
+        SERIAL = ['001', '003', '005']
+        eqpid = ['{0:s}SE{1:s}'.format(LETTER[random.randint(0, 2)], SERIAL[random.randint(0, 2)]) for i in range(self.cfg.cnt)]
+        return eqpid
+
+class CEqpIdGenerator:
+    def __init__(self, cfg):
+        self.cfg = cfg
+
+    def gen(self): 
+        LETTER = ['Y', 'Z']
+        SERIAL = ['B', 'C']
+        eqpid = ['{0:s}CO{1:s}'.format(LETTER[random.randint(0, 1)], SERIAL[random.randint(0, 1)]) for i in range(self.cfg.cnt)]
+        return eqpid
+
+class MEqpIdGenerator:
+    def __init__(self, cfg):
+        self.cfg = cfg
+
+    def gen(self): 
+        LETTER = ['W', 'X']
+        SERIAL = ['20', '33']
+        eqpid = ['{0:s}CD{1:s}'.format(LETTER[random.randint(0, 1)], SERIAL[random.randint(0, 1)]) for i in range(self.cfg.cnt)]
+        return eqpid
+        
 
 
 class SPCDataGenerator:
@@ -116,6 +147,9 @@ class SPCDataGenerator:
         CL = ControlLimitGenerator(self.cfg)
         TG = TargetGenerator(self.cfg)
         LI = LotIdGenerator(self.cfg)
+        SEQP = SEqpIdGenerator(self.cfg)
+        CEQP = CEqpIdGenerator(self.cfg)
+        MEQP = MEqpIdGenerator(self.cfg)
 
         time_series = TS.gen()
         values = RD.gen()
@@ -123,6 +157,9 @@ class SPCDataGenerator:
         UCL, LCL = CL.gen()
         target = TG.gen()
         lot_info = LI.gen()
+        seqp = SEQP.gen()
+        ceqp = CEQP.gen()
+        meqp = MEQP.gen()
 
         self.df = pd.DataFrame({
             'Data_Time': time_series,
@@ -134,8 +171,12 @@ class SPCDataGenerator:
             'UCL': UCL,
             'LCL': LCL,
             'LSL': LSL,
+            'Eqp_S': seqp,
+            'Eqp_C': ceqp,
+            'Eqp_M': meqp
         })
-        self.df = self.df[['Data_Time', 'Lot_ID', 'Item_ID', 'Value', 'Target', 'USL', 'UCL', 'LCL', 'LSL']]
+
+        self.df = self.df[['Data_Time', 'Lot_ID', 'Item_ID', 'Value', 'Target', 'USL', 'UCL', 'LCL', 'LSL', 'Eqp_S', 'Eqp_C', 'Eqp_M']]
 
         return self.df
 

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
-"""
-Created on 2020/12/19 下午 01:26
-@author: Ivan Y.W.Chiu
-"""
+# """
+# Created on 2020/12/19 下午 01:26
+# @author: Ivan Y.W.Chiu
+# """
 
 import pandas as pd
 import numpy as np
@@ -14,8 +14,11 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle as RT
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
+from cycler import cycler
 
 line_color = [46/255, 117/255, 182/255]
+Pallete_Cycler = (cycler(color=[line_color, 'g', 'k', 'y', 'c', 'm']))
+plt.rc('axes', prop_cycle=Pallete_Cycler)
 
 # %%
 ################################
@@ -45,7 +48,7 @@ class SpcPlotter:
     # TODO: make a control limit be tightened assuming the process was imporved.
     line_color = [46/255, 117/255, 182/255]
     
-    def __init__(self, df, process_name, chart_name, chart_type, chart_descpt, hl_lot=None, figsize=(8, 4.5), layout_rect=[0, 0, 0.97, 1]):
+    def __init__(self, df, process_name, chart_name, chart_type, chart_descpt, by_tool_col="", hl_lot=None, figsize=(8, 4.5), layout_rect=[0, 0, 0.97, 1]):
         self.df = df
         self.chart_name = chart_name
         self.chart_type = chart_type
@@ -61,11 +64,20 @@ class SpcPlotter:
         self.val_abs_min = self.df['Value'].abs().min()
         self.abs_sl = max(abs(self.usl), abs(self.lsl))
         self.abs_cl = max(abs(self.ucl), abs(self.lcl))
+        self.by_tool_col = by_tool_col
         self.hl_lot = hl_lot
         self.hl_lot_index = []
         self.figsize = figsize
         self.layout_rect = layout_rect
         self.fig, self.ax = plt.subplots(1, 1, figsize=self.figsize)
+
+    def df_by_tool(self):
+        self.tool_list = self.df[self.by_tool_col].drop_duplicates().tolist()
+        self.tool_list.sort()
+        self.df.sort_values(by=[self.by_tool_col, 'Data_Time'], inplace=True)
+        self.df.reset_index(drop=True, inplace=True)
+        self.df['index'] = self.df.index.tolist()
+
 
     def gen_xticklabels(self):
         if len(self.df) <= 20:
@@ -164,8 +176,17 @@ class SpcPlotter:
 
     def plot_value(self):
         self.ax.plot(self.df['index'], self.df['Value'], '-o', color=line_color)
+        # if self.ooc_index:
+        #     self.ax.plot(self.ooc_index, self.df['Value'].loc[self.ooc_index], 'ro')
+
+    def plot_value_by_tool(self):
+        for t in self.tool_list:
+            df_t = self.df[self.df[self.by_tool_col] == t]
+            self.ax.plot(df_t['index'], df_t['Value'], '-o', label=t)
+
+    def plot_ooc(self):
         if self.ooc_index:
-            self.ax.plot(self.ooc_index, self.df['Value'].loc[self.ooc_index], 'ro')
+            self.ax.plot(self.ooc_index, self.df['Value'].loc[self.ooc_index], 'ro', label='OOC')
 
     def hightlight_lot(self):
         ymin, ymax = self.ax.get_ylim()
@@ -173,8 +194,13 @@ class SpcPlotter:
         if self.hl_lot_index:
             for hl in self.hl_lot_index:
                 _ = self.ax.add_patch(RT((hl-0.5, ymin), 1, ymax - ymin, facecolor='m', alpha=0.3))
+    
+    def plot_legend(self):
+        self.ax.legend(loc=1, bbox_to_anchor=(1.16, 0.9))
 
     def plot(self):
+        if self.by_tool_col != "":
+            self.df_by_tool()
         self.gen_xticklabels()
         self.set_title()
         self.set_xyaxis()
@@ -186,13 +212,19 @@ class SpcPlotter:
         self.set_yaxis()
         self.plot_target()
         self.set_ooc()
-        self.plot_value()
+        if self.by_tool_col != "":
+            self.plot_value_by_tool()
+        else:
+            self.plot_value()
+        self.plot_ooc()
         self.hightlight_lot()
-        plt.tight_layout(rect=self.layout_rect)
+        self.plot_legend()
+        # plt.tight_layout(rect=self.layout_rect)
+        plt.tight_layout()
         plt.show()
 
 # %%
-Plotter = SpcPlotter(spc_df, process_name, chart_name, chart_type, chart_descpt)
+Plotter = SpcPlotter(spc_df, process_name, chart_name, chart_type, chart_descpt, by_tool_col='Eqp_S', figsize=(10, 4.5), layout_rect=[0, 0, 1.5, 1])
 Plotter.plot()
 fig, ax = Plotter.fig, Plotter.ax
 
