@@ -151,6 +151,11 @@ class SPCDataGenerator:
         CEQP = CEqpIdGenerator(self.cfg)
         MEQP = MEqpIdGenerator(self.cfg)
 
+        # TODO:
+        # Stage, layer, material list
+        # Prod Group, layer, s_param
+        # Eqp_S_unit1, Eqp_S_unit2, 
+
         time_series = TS.gen()
         values = RD.gen()
         USL, LSL = SL.gen()
