@@ -11,9 +11,10 @@ from datetime import datetime
 
 # %%
 class SPCDataConfig:
-    def __init__(self, start_date_str, end_date_str, ctype, cnt, data_order, sl, cl, target):
+    def __init__(self, start_date_str, end_date_str, stage_id, ctype, cnt, data_order, sl, cl, target):
         self.start_date_str = start_date_str
         self.end_date_str = end_date_str
+        self.stage_id = stage_id
         self.ctype = ctype
         self.cnt = cnt
         self.data_order = data_order
@@ -25,6 +26,7 @@ class SPCDataConfig:
         self.end_date_dt = datetime.strptime(self.end_date_str, self.dt_fmt)
         self.start_date_num = int(self.start_date_dt.timestamp())
         self.end_date_num = int(self.end_date_dt.timestamp())
+        self.lookup_tb = pd.read_csv("param\stage_layer_table.csv")
 
 
 class DataTimeGenerator:
@@ -134,6 +136,119 @@ class MEqpIdGenerator:
         eqpid = ['{0:s}CD{1:s}'.format(LETTER[random.randint(0, 1)], SERIAL[random.randint(0, 1)]) for i in range(self.cfg.cnt)]
         return eqpid
         
+class StageIdGenerator:
+    def __init__(self, cfg):
+        self.cfg = cfg
+
+    def gen(self):
+        stg_id = self.cfg.stage_id
+        stage_id_list = [stg_id for i in range(self.cfg.cnt)]
+        return stage_id_list
+
+
+class LayerIdGenerator:
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.lookup_tb = self.cfg.lookup_tb
+    
+    def gen(self):
+        layer_id = self.lookup_tb[self.lookup_tb['Stage_ID'] == self.cfg.stage_id]['Layer_ID'].tolist()[0]
+        EDITION = ['1', '2', '3']
+        layer_id_list = ['{0:s}-{1:s}'.format(layer_id, EDITION[random.randint(0, 2)]) for i in range(self.cfg.cnt)]
+        return layer_id_list
+
+
+class MaterialGenerator:
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.lookup_tb = self.cfg.lookup_tb
+    
+    def gen(self):
+        material_id = self.lookup_tb[self.lookup_tb['Stage_ID'] == self.cfg.stage_id]['Material_ID'].tolist()[0]
+        material_id_list = [material_id for i in range(self.cfg.cnt)]
+        return material_id_list
+
+
+class ProdGroupGenerator:
+    def __init__(self, cfg):
+        self.cfg = cfg
+
+    def gen(self):
+        PROD = ['A', 'B', 'C', 'D']
+        prod_id_list = ['Prod{0:s}'.format(PROD[random.randint(0, 3)]) for i in range(self.cfg.cnt)]
+        return prod_id_list
+
+
+class EqpSUnit1Generator:
+    def __init__(self, cfg) -> None:
+        self.cfg = cfg
+
+    def gen(self):
+        SU1_ID = ['01', '02', '03', '04']
+        sunit1_list = ['s#U1-{0:s}'.format(SU1_ID[random.randint(0, 3)]) for i in range(self.cfg.cnt)]
+        return sunit1_list
+
+
+class EqpSUnit2Generator:
+    def __init__(self, cfg) -> None:
+        self.cfg = cfg
+
+    def gen(self):
+        SU2_ID = ['01', '02', '03', '04']
+        sunit2_list = ['s#U2-{0:s}'.format(SU2_ID[random.randint(0, 3)]) for i in range(self.cfg.cnt)]
+        return sunit2_list
+
+
+class EqpSRecipeGenerator:
+    def __init__(self, cfg) -> None:
+        self.cfg = cfg
+        self.lookup_tb = self.cfg.lookup_tb
+
+    def gen(self):
+        layer_id = self.lookup_tb[self.lookup_tb['Stage_ID'] == self.cfg.stage_id]['Layer_ID'].tolist()[0]
+        RCP_EDITION = ['H', 'I', 'J']
+
+        s_recipe_list = ['SRCP-{0:s}-{1:s}'.format(layer_id, RCP_EDITION[random.randint(0, 2)]) for i in range(self.cfg.cnt)]
+        return s_recipe_list
+
+
+class EqpSSubRecipeGenerator:
+    def __init__(self, cfg) -> None:
+        self.cfg = cfg
+        self.lookup_tb = self.cfg.lookup_tb
+
+    def gen(self):
+        layer_id = self.lookup_tb[self.lookup_tb['Stage_ID'] == self.cfg.stage_id]['Layer_ID'].tolist()[0]
+        RCP_EDITION = ['001', '002']
+        switch_position = random.randint(int(self.cfg.cnt*0.8), int(self.cfg.cnt))
+        s_sub_recipe_list = []
+        for i in range(self.cfg.cnt):
+            if i < switch_position:
+                s_sub_recipe_list.append('SRCPSUB-{0:s}-{1:s}'.format(layer_id, RCP_EDITION[0]))
+            else:
+                s_sub_recipe_list.append('SRCPSUB-{0:s}-{1:s}'.format(layer_id, RCP_EDITION[1]))
+        return s_sub_recipe_list
+
+
+# class STimeCostGenerator:
+#     def __init__(self, cfg) -> None:
+#         self.cfg = cfg
+    
+#     def gen(self):
+#         np.random.randn(self.cfg.cnt)
+
+
+class EqpMRecipeGenerator:
+    def __init__(self, cfg) -> None:
+        self.cfg = cfg
+        self.lookup_tb = self.cfg.lookup_tb
+
+    def gen(self):
+        layer_id = self.lookup_tb[self.lookup_tb['Stage_ID'] == self.cfg.stage_id]['Layer_ID'].tolist()[0]
+        RCP_EDITION = ['.003', '.004', '.005']
+
+        s_recipe_list = ['MRCP-{0:s}-{1:s}'.format(layer_id, RCP_EDITION[random.randint(0, 2)]) for i in range(self.cfg.cnt)]
+        return s_recipe_list
 
 
 class SPCDataGenerator:
@@ -150,11 +265,18 @@ class SPCDataGenerator:
         SEQP = SEqpIdGenerator(self.cfg)
         CEQP = CEqpIdGenerator(self.cfg)
         MEQP = MEqpIdGenerator(self.cfg)
+        STAGE = StageIdGenerator(self.cfg)
+        LAYER = LayerIdGenerator(self.cfg)
+        MATERIAL = MaterialGenerator(self.cfg)
+        PROD = ProdGroupGenerator(self.cfg)
+        SU1 = EqpSUnit1Generator(self.cfg)
+        SU2 = EqpSUnit2Generator(self.cfg)
+        SEQPRCP = EqpSRecipeGenerator(self.cfg)
+        SEQPSUBRCP = EqpSSubRecipeGenerator(self.cfg)
+        MEQPRCP = EqpMRecipeGenerator(self.cfg)
 
         # TODO:
-        # Stage, layer, material list
-        # Prod Group, layer, s_param
-        # Eqp_S_unit1, Eqp_S_unit2, 
+        # s_param 
 
         time_series = TS.gen()
         values = RD.gen()
@@ -165,6 +287,15 @@ class SPCDataGenerator:
         seqp = SEQP.gen()
         ceqp = CEQP.gen()
         meqp = MEQP.gen()
+        stg = STAGE.gen()
+        layer = LAYER.gen()
+        material = MATERIAL.gen()
+        prod = PROD.gen()
+        su1 = SU1.gen()
+        su2 = SU2.gen()
+        seqprcp = SEQPRCP.gen()
+        seqpsubrcp = SEQPSUBRCP.gen()
+        meqprcp = MEQPRCP.gen()
 
         self.df = pd.DataFrame({
             'Data_Time': time_series,
@@ -176,73 +307,33 @@ class SPCDataGenerator:
             'UCL': UCL,
             'LCL': LCL,
             'LSL': LSL,
+            'Stage_ID': stg,
+            'Layer_ID': layer,
+            'Prod_ID': prod,
             'Eqp_S': seqp,
+            'Eqp_S_Unit1': su1,
+            'Eqp_S_Unit2': su2,
+            'S_Recipe': seqprcp,
+            'S_SubRecipe': seqpsubrcp,
             'Eqp_C': ceqp,
-            'Eqp_M': meqp
+            'Material_ID': material,
+            'Eqp_M': meqp,
+            'M_Recipe': meqprcp,
         })
 
-        self.df = self.df[['Data_Time', 'Lot_ID', 'Item_ID', 'Value', 'Target', 'USL', 'UCL', 'LCL', 'LSL', 'Eqp_S', 'Eqp_C', 'Eqp_M']]
+        self.df = self.df[[
+            'Data_Time', 'Lot_ID', 'Item_ID', 'Value', 
+            'Target', 'USL', 'UCL', 'LCL', 'LSL', 
+            'Stage_ID', 'Layer_ID', 'Prod_ID', 'Eqp_S', 'Eqp_S_Unit1', 'Eqp_S_Unit2',
+            'S_Recipe', 'S_SubRecipe',
+            'Eqp_C', 'Material_ID', 'Eqp_M', 'M_Recipe']]
 
         return self.df
 
 
-# cfg = SPCDataConfig('2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', ctype='MEAN', cnt=300, data_order=0.1, sl=0.3, cl=0.2, target=0)
-# SPC = SPCDataGenerator(cfg)
-# SPC.gen()
-# spc_df = SPC.df
-
-# %%
-# spc_df = spc_gen('2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', cnt=data_cnt, ctype=chart_type, spec=3*0.1, tighten_ratio=1.0)
-
-
-def spc_gen(start_date, end_date, ctype='mean', cnt=300, spec=3, tighten_ratio=0.9, target=28):
-    # start_date = '2020/11/17 00:00:00.0'
-    # end_date = '2020/12/18 00:00:00.0'
-
-    start_datetime = datetime.strptime(start_date, '%Y/%m/%d %H:%M:%S.%f')
-    end_datetime = datetime.strptime(end_date, '%Y/%m/%d %H:%M:%S.%f')
-
-    start_date_num = int(start_datetime.timestamp())
-    end_date_num = int(end_datetime.timestamp())
-
-    time_series_num = np.random.randint(start_date_num, end_date_num, cnt)
-    time_series = [datetime.fromtimestamp(x) for x in time_series_num]
-
-    point_value = np.random.randn(cnt)
-    if ctype == 'RANGE':
-        point_value = np.abs(point_value)
-
-    SPEC = spec
-    USL = np.ones(cnt)*SPEC
-    LSL = np.ones(cnt)*-SPEC
-    UCL = np.ones(cnt)*SPEC
-    LCL = np.ones(cnt)*-SPEC
-
-    tighten_point = random.randint(int(cnt*0.25), int(cnt*0.75))
-    tighten_ratio = tighten_ratio
-    UCL[tighten_point:] = SPEC*tighten_ratio
-    LCL[tighten_point:] = -SPEC*tighten_ratio
-
-    TARGET = np.ones(cnt)*target
-
-    LETTER = ['U', 'X', 'T', 'G']
-    lot6 = ['L7{0:s}{1:03d}'.format(LETTER[random.randint(0, 3)], random.randint(1, 999)) for x in range(cnt)]
-    lot2 = ['{0:02d}'.format(random.randint(1, 99)) for x in range(cnt)]
-    itemid = ['{0:02d}'.format(random.randint(1, 25)) for x in range(cnt)]
-    lot_info = pd.DataFrame({
-        'Lot6': lot6, 'Lot2': lot2, 'Item2': itemid
-    }, columns=['Lot6', 'Lot2', 'Item2'])
-    lot_info["Lot_ID"] = lot_info['Lot6'].str.cat(lot_info['Lot2'].values, sep='.')
-    lot_info["Item_ID"] = lot_info['Lot6'].str.cat(lot_info['Item2'].values, sep='.')
-
-    return pd.DataFrame({
-        'Data_Time': time_series,
-        'Lot_ID': lot_info['Lot_ID'].values,
-        'Item_ID': lot_info['Item_ID'].values,
-        'Point_Values': point_value,
-        'Target': TARGET,
-        'USL': USL,
-        'UCL': UCL,
-        'LCL': LCL,
-        'LSL': LSL,
-    }, columns=['Data_Time', 'Lot_ID', 'Item_ID', 'Point_Values', 'Target', 'USL', 'UCL', 'LCL', 'LSL'])
+cfg = SPCDataConfig(
+    '2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', 
+    stage_id='stageE11', ctype='MEAN', cnt=300, data_order=0.1, sl=0.3, cl=0.2, target=0)
+SPC = SPCDataGenerator(cfg)
+SPC.gen()
+spc_df = SPC.df
