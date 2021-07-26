@@ -327,13 +327,18 @@ class SPCDataGenerator:
             'Stage_ID', 'Layer_ID', 'Prod_ID', 'Eqp_S', 'Eqp_S_Unit1', 'Eqp_S_Unit2',
             'S_Recipe', 'S_SubRecipe',
             'Eqp_C', 'Material_ID', 'Eqp_M', 'M_Recipe']]
+        self.df['Chart_Type'] = self.cfg.ctype
 
         return self.df
 
+def main():
+    cfg = SPCDataConfig(
+        '2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', 
+        stage_id='stageE11', ctype='MEAN', cnt=300, data_order=0.1, sl=0.3, cl=0.2, target=0)
+    SPC = SPCDataGenerator(cfg)
+    SPC.gen()
+    return SPC.df
 
-cfg = SPCDataConfig(
-    '2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', 
-    stage_id='stageE11', ctype='MEAN', cnt=300, data_order=0.1, sl=0.3, cl=0.2, target=0)
-SPC = SPCDataGenerator(cfg)
-SPC.gen()
-spc_df = SPC.df
+
+if __name__ == '__main__':
+    spc_df = main()
