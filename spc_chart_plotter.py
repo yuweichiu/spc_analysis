@@ -24,21 +24,10 @@ plt.rc('axes', prop_cycle=Pallete_Cycler)
 ################################
 # Generate demo SPC data
 ################################
+
 mpl.rcParams.update({"font.size": "8",
                      'lines.linewidth': 1,
                      'lines.markersize': 4})
-data_cnt = 100
-process_name = 'PROC-001-2'
-chart_name = 'WEIGHT'
-chart_type = 'MEAN'
-chart_descpt = 'A demo SPC chart'
-
-spc_cfg = SPCDataConfig('2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', ctype=chart_type, cnt=data_cnt, data_order=0.1, sl=0.3, cl=0.2, target=0)
-SPC = SPCDataGenerator(spc_cfg)
-spc_df = SPC.gen()
-
-spc_df.reset_index(inplace=True)
-focus_lot = spc_df['Lot_ID'].values.tolist()[random.randint(int(data_cnt*0.8), data_cnt-1)]
 
 # %%
 ################################
@@ -48,7 +37,7 @@ class SpcPlotter:
     # TODO: make a control limit be tightened assuming the process was imporved.
     line_color = [46/255, 117/255, 182/255]
     
-    def __init__(self, df, process_name, chart_name, chart_type, chart_descpt, by_tool_col="", hl_lot=None, figsize=(8, 4.5), layout_rect=[0, 0, 0.97, 1]):
+    def __init__(self, df, process_name="", chart_name="", chart_type="", chart_descpt="", by_tool_col="", hl_lot=None, figsize=(8, 4.5), layout_rect=[0, 0, 0.97, 1]):
         self.df = df
         self.chart_name = chart_name
         self.chart_type = chart_type
@@ -224,15 +213,30 @@ class SpcPlotter:
         plt.show()
 
 # %%
-Plotter = SpcPlotter(spc_df, process_name, chart_name, chart_type, chart_descpt, by_tool_col='Eqp_S', figsize=(10, 4.5), layout_rect=[0, 0, 1.5, 1])
-Plotter.plot()
-fig, ax = Plotter.fig, Plotter.ax
+if __name__ == '__main__':
+    data_cnt = 100
+    process_name = 'PROC-001-2'
+    chart_name = 'WEIGHT'
+    chart_type = 'MEAN'
+    chart_descpt = 'A demo SPC chart'
 
-# %%
-fig_name = '#'.join(['chart', process_name, chart_name, chart_type])
-fig.savefig('./output/{}.png'.format(fig_name), dpi=150)
+    spc_cfg = SPCDataConfig(
+        '2020/11/17 00:00:00.0', '2020/12/18 00:00:00.0', 
+        stage_id='stageE11', ctype=chart_type, cnt=data_cnt, data_order=0.1, sl=0.3, cl=0.2, target=0)
+    SPC = SPCDataGenerator(spc_cfg)
+    spc_df = SPC.gen()
 
-# %%
-from tabulate import tabulate
-print(tabulate(spc_df.head(), headers='keys', tablefmt='psql'))
-# %%
+    spc_df.reset_index(inplace=True)
+    focus_lot = spc_df['Lot_ID'].values.tolist()[random.randint(int(data_cnt*0.8), data_cnt-1)]
+    # %%
+    Plotter = SpcPlotter(spc_df, process_name, chart_name, chart_type, chart_descpt, by_tool_col='Eqp_S', figsize=(10, 4.5), layout_rect=[0, 0, 1.5, 1])
+    Plotter.plot()
+    fig, ax = Plotter.fig, Plotter.ax
+
+    # %%
+    fig_name = '#'.join(['chart', process_name, chart_name, chart_type])
+    fig.savefig('./output/{}.png'.format(fig_name), dpi=150)
+
+    # %%
+    from tabulate import tabulate
+    print(tabulate(spc_df.head(), headers='keys', tablefmt='psql'))
