@@ -4,7 +4,7 @@ Created on 2021/08/04
 @author: Ivan Y.W.Chiu
 """
 
-from src.anomaly_maker import SimpleOneThingMeanMismatchMaker
+from src.anomaly_maker import SimpleOneThingMeanMismatchMaker, SimpleOneThingMeanKShiftMaker
 import pandas as pd
 import numpy as np
 from typing import Tuple
@@ -15,12 +15,8 @@ class SimpleOneThingMeanMismatchDetector(SimpleOneThingMeanMismatchMaker):
     def __init__(self, df: pd.DataFrame, col: str, criteria: float=0.33, item: str="") -> None:
         super().__init__(df, col, mismatch_ratio=0, item=item)
         self.criteria = criteria
-        self.ucl, self.lcl = self.get_cl(self.df)
-        self.chart_type = self.df['Chart_Type'].tolist()[-1]
-        self.tolerance = self.cal_tolerance(self.df, self.chart_type, self.ucl, self.lcl)
 
     def display(self) -> None:
-        
         return
 
     def detect(self) -> Tuple[list, np.ndarray]:
