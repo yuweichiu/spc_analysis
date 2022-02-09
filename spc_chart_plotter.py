@@ -59,6 +59,7 @@ class SpcPlotter:
         self.figsize = figsize
         self.layout_rect = layout_rect
         self.fig, self.ax = plt.subplots(1, 1, figsize=self.figsize)
+        self.df['index'] = self.df.index.tolist()
 
     def df_by_tool(self):
         self.tool_list = self.df[self.by_tool_col].drop_duplicates().tolist()
@@ -208,8 +209,8 @@ class SpcPlotter:
         self.plot_ooc()
         self.hightlight_lot()
         self.plot_legend()
-        # plt.tight_layout(rect=self.layout_rect)
-        plt.tight_layout()
+        plt.tight_layout(rect=self.layout_rect)
+        # plt.tight_layout()
         plt.show()
 
 # %%

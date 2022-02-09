@@ -30,18 +30,19 @@ spc_df = SPC.df.copy()
 mismatch_maker = SimpleOneThingMeanMismatchMaker(spc_df, 'Eqp_M', 0.5)
 new_spc_df = mismatch_maker.gen()
 
-# %% 
-mismatch_maker = SimpleOneThingMeanKShiftMaker(new_spc_df, 'Eqp_M', 0.5)
-new_spc_df = mismatch_maker.gen()
-
 # %%
-Plotter = SpcPlotter(new_spc_df, by_tool_col='Eqp_M', figsize=(10, 4.5), layout_rect=[0, 0, 1.5, 1])
+Plotter = SpcPlotter(new_spc_df, by_tool_col='Eqp_M', figsize=(10, 4.5))
 Plotter.plot()
 fig, ax = Plotter.fig, Plotter.ax
+fig.savefig('./output/data_Eqp_M_1_mismatch.png', dpi=150)
 
 # %%
 simple_detector = SimpleOneThingMeanMismatchDetector(spc_df, "Eqp_M", criteria=0.33)
 mismatch_index, mismatch_ratio = simple_detector.detect()
 
-# %%
 new_spc_df.to_csv('data/data_Eqp_M_1_mismatch.csv', index=False)
+
+
+# %% 
+# mismatch_maker = SimpleOneThingMeanKShiftMaker(spc_df, 'Eqp_M', 0.5)
+# new_spc_df = mismatch_maker.gen()

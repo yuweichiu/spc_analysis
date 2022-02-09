@@ -4,15 +4,32 @@ Created on 2021/08/04
 @author: Ivan Y.W.Chiu
 """
 
+from operator import index
 import pandas as pd
+import numpy as np
 from typing import Tuple
 import random
 import math
 
 
+
+def sampling_shift_starting_index(df: pd.DataFrame) -> int:
+    max_index_of_df = len(df) - 1
+    ratio_of_shifted_data = math.floor(max_index_of_df * random.randint(40, 80)/100)
+    start_id = random.randint(ratio_of_shifted_data, max_index_of_df)
+    end_id = max_index_of_df
+    print(start_id, end_id)
+    return start_id, end_id
+
+
 class DataInfo:
     def __init__(self, df: pd.DataFrame) -> None:
-        self.df = df
+        """A basic class for getting the basic info in spc data.
+
+        Args:
+            df (pd.DataFrame): spc data.
+        """
+        self.df = df.copy()
         self.len = len(self.df)
         self.chart_type = self.get_chart_type(df)
         self.ucl, self.lcl = self.get_cl(df)
@@ -37,11 +54,20 @@ class DataInfo:
 
 class SimpleOneThingMeanMismatchMaker(DataInfo):
     def __init__(self, df: pd.DataFrame, col:str, mismatch_ratio:float, item: str="") -> None:
+        """Generate a spc data that has value mean mismatch on the 'item' of 'col'.
+
+        Args:
+            df (pd.DataFrame): Raw spc data.
+            col (str): The column you want to be mismatch.
+            mismatch_ratio (float): Mismatch quantity will be the value + the tolerance * the ratio.
+            item (str, optional): The item in the 'col' you want to be mismatch. Defaults to "", will choose it randomly.
+        """
         super().__init__(df)
         self.col = col
         self.mismatch_ratio = mismatch_ratio
         self.item = item
-        self.select_item()
+        if self.col != 'global':
+            self.select_item()
 
 
     def select_item(self) -> None:
@@ -65,26 +91,85 @@ class SimpleOneThingMeanMismatchMaker(DataInfo):
 
 
 class SimpleOneThingMeanKShiftMaker(SimpleOneThingMeanMismatchMaker):
-    def __init__(self, df: pd.DataFrame, col: str, mismatch_ratio: float, item: str="") -> None:
-        super().__init__(df, col, mismatch_ratio, item=item)
+    def __init__(self, df: pd.DataFrame, col: str, kshift_ratio: float, item: str="") -> None:
+        """Make a k-shift in the data.
 
-    def sampling_shift_starting_index(self, df: pd.DataFrame) -> int:
-        max_index_of_df = len(df) - 1
-        ratio_of_shifted_data = math.floor(max_index_of_df * random.randint(40, 80)/100)
-        index_start = random.randint(ratio_of_shifted_data, max_index_of_df)
-        return index_start
+        Args:
+            df (pd.DataFrame): Raw SPC data.
+            col (str): The column you want to have k-shift.
+            kshift_ratio (float): K-shift quantity will be the value + the tolerance * the ratio.
+            item (str, optional): The item in the 'col' you want to be mismatch. Defaults to "", will choose it randomly.
+        """
+        super().__init__(df, col, kshift_ratio, item=item)
+        self.kshift_ratio = kshift_ratio
 
     def gen(self) -> pd.DataFrame:
-        df = self.df[self.df[self.col] == self.item]
-        self.index_start = self.sampling_shift_starting_index(df)
+        if self.col != 'global':
+            df = self.df[self.df[self.col] == self.item]
+        else:
+            df = self.df.copy()
+        self.index_start, _ = sampling_shift_starting_index(df)
         selected_row_index = df.index
         selected_value = self.df['Value'].loc[selected_row_index].values
-        selected_value[self.index_start: ] = selected_value[self.index_start: ] + self.tolerance*self.mismatch_ratio
+        selected_value[self.index_start: ] = selected_value[self.index_start: ] + self.tolerance*self.kshift_ratio
         self.df['Value'].loc[selected_row_index] = selected_value
         return self.df
 
 
-class OneThingProgressivlyTrendingMaker:
-    def __init__(self) -> None:
-        pass
+class OneThingProgressivlyTrendingMaker(DataInfo):
+    def __init__(self, df: pd.DataFrame, col:str, start_id: int, end_id: int, final_ratio: float, item: str="", trend_type: str="x1") -> None:
+        """Generate a y=ax  or y=a(x^2 ) trending according to start_id, end_id, and final_ratio.
+
+        Args:
+            df (pd.DataFrame): [description]
+            col (str): [description]
+            start_id (int): [description]
+            end_id (int): [description]
+            final_ratio (float): 
+            item (str, optional): [description]. Defaults to "".
+            trend_type (str, optional): [description]. Defaults to "x1".
+        """
+        super().__init__(df)
+
+        self.start_id = start_id
+        self.end_id = end_id
+        self.final_ratio = final_ratio
+        self.trend_type = trend_type
+
+
+    def gen(self):
+        if self.col != 'global':
+            df = self.df[self.df[self.col] == self.item]
+        else:
+            df = self.df.copy()
+
+        selected_row_index = df.index
+        value_col = df['Value'].values
+        index_col = np.arange(0, len(value_col))
+        sigma_0 = value_col[0: self.start_id + 1].std()
+
+        if self.trend_type == 'x1':
+            a = (self.final_ratio * sigma_0) / (self.end_id - self.start_id)
+            value_col = np.where(
+                (index_col >= self.start_id) & (index_col < self.end_id), 
+                value_col + a * (value_col - self.start_id),
+                value_col
+                )
+
+        elif self.trend_type == 'x2':
+            a = (self.final_ratio * sigma_0) / (self.end_id**2 - self.start_id**2)
+            value_col = np.where(
+                (index_col >= self.start_id) & (index_col < self.end_id),
+                value_col + a * (value_col - self.start_id)**2,
+                value_col
+            )
+        else:
+            raise ValueError("trend_type should be 'x1' or 'x2, {} was given.".format(self.trend_type))
+
+        self.df['Value'].loc[selected_row_index] = value_col
+        return self.df
+            
+
+
+
 
