@@ -11,7 +11,7 @@ import os, sys, time, random
 from datetime import datetime
 from typing import Tuple
 import matplotlib as mpl
-mpl.use('Qt5Agg')
+# mpl.use('Qt5Agg')
 from matplotlib import pyplot as plt
 plt.ion()
 from spc_data_generator import SPCDataConfig, SPCDataGenerator
@@ -43,7 +43,7 @@ fig, ax = Plotter.fig, Plotter.ax
 Plotter = SpcPlotter(new_spc_df, figsize=(10, 4.5))
 Plotter.plot()
 fig1, ax1 = Plotter.fig, Plotter.ax
-
+new_spc_df.to_csv("data/treding_data_01.csv", index=False)
 # %%
 # import packages
 from kats.consts import TimeSeriesData, TimeSeriesIterator
