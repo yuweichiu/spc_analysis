@@ -4,7 +4,6 @@
 # @author: Ivan Y.W.Chiu
 # """
 
-from cProfile import label
 import pandas as pd
 import numpy as np
 import os, sys, time, random
@@ -43,7 +42,7 @@ fig, ax = Plotter.fig, Plotter.ax
 Plotter = SpcPlotter(new_spc_df, figsize=(10, 4.5))
 Plotter.plot()
 fig1, ax1 = Plotter.fig, Plotter.ax
-new_spc_df.to_csv("data/treding_data_01.csv", index=False)
+# new_spc_df.to_csv("data/treding_data_01.csv", index=False)
 # %%
 # import packages
 from kats.consts import TimeSeriesData, TimeSeriesIterator
